@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Movie, Review, Rating
+from .models import Movie, Review, Rating, Actor
 
 
 class FilterReviewListSerializer(serializers.ListSerializer):
@@ -15,6 +15,20 @@ class RecursiveSerializer(serializers.Serializer):
     def to_representation(self, value):
         serializer = self.parent.parent.__class__(value, context=self.context)
         return serializer.data
+
+
+class ActorSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Actor
+        fields = ('id', 'name', 'image')
+
+
+class ActorDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Actor
+        fields = '__all__'
 
 
 class MovieListSerializer(serializers.ModelSerializer):
@@ -47,8 +61,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 class MovieDetailSerializer(serializers.ModelSerializer):
 
     category = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    actors = serializers.SlugRelatedField(slug_field='name', read_only=True, many=True)
-    directors = serializers.SlugRelatedField(slug_field='name', read_only=True, many=True)
+    actors = ActorSerializer(read_only=True, many=True)
+    directors = ActorSerializer(read_only=True, many=True)
     genres = serializers.SlugRelatedField(slug_field='name', read_only=True)
     reviews = ReviewSerializer(many=True)
 
@@ -64,7 +78,7 @@ class CreateRatingSerializer(serializers.ModelSerializer):
         fields = ('star', 'movie')
 
     def create(self, validate_data):
-        rating = Rating.objects.update_or_create(
+        rating, _ = Rating.objects.update_or_create(
             ip=validate_data.get('ip', None),
             movie=validate_data.get('movie', None),
             defaults={'star': validate_data.get('star')}
