@@ -8,8 +8,6 @@ from .models import *
 
 class MovieAdminForm(forms.ModelForm):
 
-    description = forms.CharField(label='', widget=CKEditorUploadingWidget())
-
     class Meta:
         model = Movie
         fields = '__all__'
