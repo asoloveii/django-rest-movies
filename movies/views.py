@@ -1,5 +1,5 @@
 from django.db import models
-from rest_framework import generics
+from rest_framework import generics, permissions, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Movie, Actor
@@ -11,14 +11,14 @@ from .serializers import (
     ActorSerializer,
     ActorDetailSerializer
 )
-from .service import get_client_ip, MovieFilter
+from .service import get_client_ip, MovieFilter, PaginationMovies
 
 
-class MovieListView(generics.ListAPIView):
+class MovieListView(viewsets.ReadOnlyModelViewSet):
 
-    serializer_class = MovieListSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = MovieFilter
+    pagination_class = PaginationMovies
 
     def get_queryset(self):
         movies = Movie.objects.filter(draft=False).annotate(
@@ -30,6 +30,12 @@ class MovieListView(generics.ListAPIView):
         )
         return movies
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MovieListSerializer
+        elif self.action == 'retrieve':
+            return MovieDetailSerializer
+
 
 class MovieDetailView(generics.RetrieveAPIView):
 
@@ -37,12 +43,12 @@ class MovieDetailView(generics.RetrieveAPIView):
     serializer_class = MovieDetailSerializer
 
 
-class ReviewCreateView(generics.CreateAPIView):
+class ReviewCreateView(viewsets.ModelViewSet):
 
     serializer_class = ReviewCreateSerializer
 
 
-class AddStarRatingView(generics.CreateAPIView):
+class AddStarRatingView(viewsets.ModelViewSet):
 
     serializer_class = CreateRatingSerializer
 
@@ -50,10 +56,15 @@ class AddStarRatingView(generics.CreateAPIView):
         serializer.save(ip=get_client_ip(self.request))
 
 
-class ActorsListView(generics.ListAPIView):
+class ActorsListView(viewsets.ReadOnlyModelViewSet):
 
     queryset = Actor.objects.all()
-    serializer_class = ActorSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ActorSerializer
+        elif self.action == 'retrieve':
+            return ActorDetailSerializer
 
 
 class ActorDetailView(generics.RetrieveAPIView):
